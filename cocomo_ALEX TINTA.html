@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>COCOMO - Estimación de Costos de Software</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #e0f7f7;
+            color: #003333;
+        }
+        h1, h2 {
+            color: #006666;
+        }
+        label, button {
+            display: block;
+            margin-top: 10px;
+        }
+        input {
+            margin: 5px 0;
+            padding: 8px;
+            font-size: 16px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #009999;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #007777;
+        }
+        #resultado p {
+            margin: 5px 0;
+        }
+        .neg {
+            font-weight: bold;
+        }
+        .error {
+            color: red;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>ESTIMACIÓN DE COSTOS DE SOFTWARE</h1>
+    <p>Utiliza este sistema para estimar costos y esfuerzo en proyectos de software usando el modelo COCOMO.</p>
+    
+    <h2>ENTRADA DE DATOS</h2>
+    <label for="entrada">Número de entradas:</label>
+    <input type="number" id="entrada" placeholder="Ingrese el número de entradas" min="0">
+
+    <label for="salida">Número de salidas:</label>
+    <input type="number" id="salida" placeholder="Ingrese el número de salidas" min="0">
+
+    <h2>CÁLCULO DE FACTOR DE PONDERACIÓN</h2>
+    <label for="factor">Ingresa un valor del factor de ponderación (50 a 150):</label>
+    <input type="number" id="factor" placeholder="Ejemplo: 85" min="50" max="150">
+    
+    <button onclick="calcular()">Calcular</button>
+    <button onclick="descargarPDF()">Descargar PDF</button>
+    
+    <div id="resultado" style="margin-top: 20px;"></div>
+    <div id="error" class="error"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
+    <script>
+        function calcular() {
+            const entrada = parseInt(document.getElementById('entrada').value) || 0;
+            const salida = parseInt(document.getElementById('salida').value) || 0;
+            const factor = parseInt(document.getElementById('factor').value);
+
+            if (!factor || factor < 50 || factor > 150) {
+                document.getElementById('error').textContent = "El factor debe estar entre 50 y 150.";
+                document.getElementById('resultado').innerHTML = "";
+                return;
+            }
+
+            const total = entrada + salida;
+
+            if (total === 0) {
+                document.getElementById('error').textContent = "Por favor, ingrese al menos una entrada o salida.";
+                document.getElementById('resultado').innerHTML = "";
+                return;
+            }
+
+            document.getElementById('error').textContent = "";
+
+            let categoria = "";
+            let A = 0, B = 0, C = 2.5, D = 0;
+
+            // Categorizar el factor
+            if (factor >= 50 && factor <= 80) {
+                categoria = "Orgánico";
+                A = 2.4;
+                B = 1.05;
+                D = 0.38;
+            } else if (factor >= 81 && factor <= 100) {
+                categoria = "Semiacoplado";
+                A = 3.0;
+                B = 1.12;
+                D = 0.35;
+            } else if (factor >= 101 && factor <= 150) {
+                categoria = "Acoplado";
+                A = 3.6;
+                B = 1.2;
+                D = 0.32;
+            }
+
+            // Cálculos
+            const lcd = factor * total;
+            const E = A * Math.pow(lcd / 1000, B);
+            const TD = C * Math.pow(E, D);
+            const CP = E / TD;
+            const COSTO = E * 2500;
+
+            // Mostrar resultados
+            const resultadoHTML = `
+                <p><strong>Resultados:</strong></p>
+                <p><span class="neg">Categoría:</span> ${categoria}</p>
+                <p><span class="neg">Número de líneas de código (LCD):</span> ${lcd}</p>
+                <p><span class="neg">Esfuerzo nominal (E):</span> ${E.toFixed(2)} persona-meses</p>
+                <p><span class="neg">Tiempo de desarrollo (TD):</span> ${TD.toFixed(2)} meses</p>
+                <p><span class="neg">Personal necesario (CP):</span> ${CP.toFixed(2)} personas</p>
+                <p><span class="neg">Costo total del proyecto:</span> ${COSTO.toFixed(2)} Bs.</p>
+            `;
+            document.getElementById('resultado').innerHTML = resultadoHTML;
+        }
+
+        function descargarPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            const resultados = document.getElementById('resultado').innerText;
+            doc.text("Resultados de la Estimación de Costos", 10, 10);
+            doc.text(resultados, 10, 20);
+            doc.save("estimacion_cocomo.pdf");
+        }
+    </script>
+</body>
+</html>
